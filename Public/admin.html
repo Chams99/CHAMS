@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Cosmétiques</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>Panneau d'administration</h1>
+    <nav>
+      <a href="index.html">Accueil</a>
+    </nav>
+  </header>
+
+  <section class="form-section">
+    <h2>Ajouter un produit</h2>
+    <form id="add-product-form">
+      <label for="title">Nom du produit :</label>
+      <input type="text" id="title" name="title" required>
+
+      <label for="price">Prix (€) :</label>
+      <input type="number" step="0.01" id="price" name="price" required>
+
+      <label for="description">Description :</label>
+      <textarea id="description" name="description" required></textarea>
+
+      <label for="image">Nom de l'image (ex: produit1.png) :</label>
+      <input type="text" id="image" name="image" required>
+
+      <input type="submit" value="Ajouter">
+    </form>
+  </section>
+
+  <section class="form-section">
+    <h2>Produits en base de données</h2>
+    <ul id="product-list"></ul>
+  </section>
+
+  <section class="form-section">
+    <h2>Commandes passées</h2>
+    <ul id="order-list"></ul>
+  </section>
+
+  <footer>
+    <p>&copy; 2024 Cosmétiques Beauté — Admin</p>
+  </footer>
+
+  <script>
+    async function loadProducts() {
+      const res = await fetch('/api/products');
+      const products = await res.json();
+      const list = document.getElementById('product-list');
+      list.innerHTML = '';
+
+      products.forEach(p => {
+        const item = document.createElement('li');
+        item.innerHTML = `
+          <strong>${p.title}</strong> — ${Number(p.price).toFixed(2)} € — ${p.description}
+          <button onclick="deleteProduct(${p.id})" style="margin-left:10px; color:white; background:#e91e63; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">
+            Supprimer
+          </button>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm("Confirmer la suppression de ce produit ?")) return;
+      await fetch('/api/products/' + id, {
+        method: 'DELETE'
+      });
+      alert('Produit supprimé !');
+      loadProducts();
+    }
+
+    document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        title: e.target.title.value,
+        price: e.target.price.value,
+        description: e.target.description.value,
+        image: e.target.image.value
+      };
+
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+      alert('Produit ajouté !');
+      e.target.reset();
+      loadProducts();
+    });
+
+    async function loadOrders() {
+      const res = await fetch('/api/orders');
+      const orders = await res.json();
+      const list = document.getElementById('order-list');
+      list.innerHTML = '';
+
+      orders.forEach(order => {
+        const item = document.createElement('li');
+        item.innerHTML = `
+          <strong>${order.product_title}</strong> — ${Number(order.price).toFixed(2)} € 
+          <em>(ID produit: ${order.product_id})</em> — ${new Date(order.created_at).toLocaleString()}
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    loadProducts();
+    loadOrders();
+  </script>
+
+</body>
+</html>
